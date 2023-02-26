@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible">
+    <title>RCG ASSESSMENT</title>
+
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
+	<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/style.css" />
+
+</head>
+<body>
+
+<style>
+</style>
+
+<script type="text/javascript">
+const jq = jQuery.noConflict();
+function hideError() {
+	jq(".formError").hide();
+}
+
+function showError(err) {
+	jq(".formError").html(err);
+	jq(".formError").show();
+}
+
+function deleteRow(person_id) {
+	var data = {
+		person_id: person_id,
+		mode: 'delete'
+	};
+
+	jq.post(
+		'/api/employees.php',
+		data,
+		function(res) {
+			alert(res);
+			location.reload();
+		},
+		'string'
+	);
+	location.reload();
+	return true;
+}
+
+function editForm(person_id,first_name,last_name,email_address,hire_date,job_title,agency_num) {
+	jq("#edit_person_id").val(person_id);
+	jq("#edit_first_name").val(first_name);
+	jq("#edit_last_name").val(last_name);
+	jq("#edit_email_address").val(email_address);
+	jq("#edit_hire_date").val(hire_date);
+	jq("#edit_job_title").val(job_title);
+	jq("#edit_agency_num").val(agency_num);
+	jq("#registration_div").hide();
+	jq("#registration_pageheading").hide();
+	jq("#edit_pageheading").show();
+	jq("#edit_div").show();
+	jq("#employee_edit_form").show();
+}
+
+const dt_options = {
+	serverSide: true,
+	searching: false,
+	destroy: true,
+	autoWidth: false,
+	columnDefs: [
+		{
+			targets: "_all",
+			className: "dt-body-center"
+		},
+	],
+	columns: [
+		{
+			name: "person_id",
+			data: "person_id",
+			visible: true,
+			sortable: false,
+			searchable: true
+		},
+		{
+			name: "first_name",
+			data: "first_name",
+			visible: true,
+			sortable: true,
+			searchable: true
+		},
+		{
+			name: "last_name",
+			data: "last_name",
+			visible: true,
+			sortable: true,
+			searchable: true,
+		},
+		{
+			name: "email_address",
+			data: "email_address",
+			visible: true,
+			sortable: false,
+			searchable: true
+		},
+		{
+			name: "hire_date",
+			data: "hire_date",
+			visible: true,
+			sortable: true,
+			searchable: false
+		},
+		{
+			name: "job_title",
+			data: "job_title",
+			visible: true,
+			sortable: false,
+			searchable: true
+		},
+		{
+			name: "agency_num",
+			data: "agency_num",
+			visible: true,
+			sortable: true,
+			searchable: true
+		},
+		{
+			name: "registration_date",
+			data: "registration_date",
+			visible: true,
+			sortable: true,
+			searchable: false
+		},
+		{
+			name: "edit_btn",
+			data: "edit_btn",
+			visible: true,
+			sortable: false,
+			searchable: false
+		},
+		{
+			name: "delete_btn",
+			data: "delete_btn",
+			visible: true,
+			sortable: false,
+			searchable: false
+		},
+	],
+	ajax: {
+		url: "/api/employees.php",
+		type: "GET",
+		data: {mode: 'get',}
+	},
+};
+
+jq(function() {
+	// Initial load data
+	var table = jq("#employee_table").DataTable(dt_options);
+
+	// Handle Agency Number when appropriate
+	jq("#job_title").on('change', function(e) {
+		if (jq("#job_title").val() == "Direct Rep A"
+			|| jq("#job_title").val() == "Direct Rep B") {
+			jq("#agency_num").val('');
+			jq("#agency_num_tr").show();
+		} else {
+			jq("#agency_num").val('empty');
+			jq("#agency_num_tr").hide();
+		}
+	});
+
+	jq("#edit_job_title").on('change', function(e) {
+		if (jq("#edit_job_title").val() == "Direct Rep A"
+			|| jq("#edit_job_title").val() == "Direct Rep B") {
+			jq("#edit_agency_num_tr").show();
+		} else {
+			if (jq("#edit_agency_num").val() == '') {
+				jq("#edit_agency_num").val('empty');
+			}
+			jq("#edit_agency_num_tr").hide();
+		}
+	});
+
+	// Execute insert, edit, or delete
+	jq("#register_employee").on('click', function(e) {
+		e.preventDefault();
+
+		// Handle missing fields
+		var missing_data = false;
+		var email_error = false;
+		var date_error = false;
+		var msg_error = "";
+		var person_id = jq("#person_id").val();
+		if (!person_id) { missing_data = true; }
+		var first_name = jq("#first_name").val();
+		if (!first_name) { missing_data = true; }
+		var last_name = jq("#last_name").val();
+		if (!last_name) { missing_data = true; }
+		var job_title = jq("#job_title").val();
+		if (!job_title) { missing_data = true; }
+		var email_address = jq("#email_address").val();
+		if (!email_address) { missing_data = true; }
+		else { // Handle email validation
+			if (email_address.split('@').length !==2) {
+				email_error = true;
+				msg_err = "Email formatted poorly; must have exactly one @ symbol";
+			} else if (email_address.split('.').length < 2) {
+				email_error = true;
+				msg_err = "Email formatted poorly; must have at least one . symbol";
+			} else if (email_address.split(' ').length > 1) {
+				email_error = true;
+				msg_err = "Email formatted poorly; must not have any spaces";
+			}
+		}
+		var hire_date = jq("#hire_date").val();
+		if (!hire_date) { missing_data = true; }
+		else { // Handle date validation
+			var today = new Date();
+			var hired = new Date(hire_date);
+			console.log(today, hired);
+			if (hired > today) {
+				date_error = true;
+				msg_err = "Date MUST NOT be in the future.";
+			}
+		}
+		var agency_num = jq("#agency_num").val();
+		if (!agency_num) { missing_data = true; }
+
+		if (missing_data) {
+			showError("All form fields MUST be filled out");
+			return false;
+		}
+
+		if (email_error) {
+			showError(msg_err);
+			return false;
+		}
+
+		if (date_error) {
+			showError(msg_err);
+			return false;
+		}
+
+		//Form info
+		var data = {
+			person_id: person_id,
+			first_name: first_name,
+			last_name: last_name,
+			job_title: job_title,
+			email_address: email_address,
+			hire_date: hire_date,
+			agency_num: agency_num,
+			mode: 'insert'
+		};
+
+		hideError();
+		jq.post(
+			'/api/employees.php',
+			data,
+			function(res) {
+				console.log(res);
+				if (res.error) {
+					alert(res);
+				}
+			},
+			'string'
+		);
+		location.reload();
+		return true;
+	});
+
+	// Execute insert, edit, or delete
+	jq("#edit_employee").on('click', function(e) {
+		e.preventDefault();
+
+		// Handle missing fields
+		var missing_data = false;
+		var email_error = false;
+		var date_error = false;
+		var msg_error = "";
+		var person_id = jq("#edit_person_id").val();
+		if (!person_id) { missing_data = true; }
+		var first_name = jq("#edit_first_name").val();
+		if (!first_name) { missing_data = true; }
+		var last_name = jq("#edit_last_name").val();
+		if (!last_name) { missing_data = true; }
+		var job_title = jq("#edit_job_title").val();
+		if (!job_title) { missing_data = true; }
+		var email_address = jq("#edit_email_address").val();
+		if (!email_address) { missing_data = true; }
+		else { // Handle email validation
+			if (email_address.split('@').length !==2) {
+				email_error = true;
+				msg_err = "Email formatted poorly; must have exactly one @ symbol";
+			} else if (email_address.split('.').length < 2) {
+				email_error = true;
+				msg_err = "Email formatted poorly; must have at least one . symbol";
+			} else if (email_address.split(' ').length > 1) {
+				email_error = true;
+				msg_err = "Email formatted poorly; must not have any spaces";
+			}
+		}
+		var hire_date = jq("#edit_hire_date").val();
+		if (!hire_date) { missing_data = true; }
+		else { // Handle date validation
+			var today = new Date();
+			var hired = new Date(hire_date);
+			console.log(today, hired);
+			if (hired > today) {
+				date_error = true;
+				msg_err = "Date MUST NOT be in the future.";
+			}
+		}
+		var agency_num = jq("#edit_agency_num").val();
+		if (!agency_num) { missing_data = true; }
+
+		if (missing_data) {
+			showError("All form fields MUST be filled out");
+			return false;
+		}
+
+		if (email_error) {
+			showError(msg_err);
+			return false;
+		}
+
+		if (date_error) {
+			showError(msg_err);
+			return false;
+		}
+
+		//Form info
+		var data = {
+			person_id: person_id,
+			first_name: first_name,
+			last_name: last_name,
+			job_title: job_title,
+			email_address: email_address,
+			hire_date: hire_date,
+			agency_num: agency_num,
+			mode: 'edit'
+		};
+
+		hideError();
+		jq.post(
+			'/api/employees.php',
+			data,
+			function(res) {
+				if (res != 'Success') {
+					alert(res);
+				}
+			},
+			'string'
+		);
+		location.reload();
+		return true;
+	});
+
+});
+
+</script>
+<div id="edit_pageheading" class="pageheading" style="display: none;">Employee Edit Form</div>
+<div id="edit_div" class="formcontent" style="display: none;">
+	<div class="msg_error formError" style="display: none;"></div>
+	<form id="employee_edit_form" style="display: none;">
+		<table cellpadding="2" cellspacing="0" border="0" style="border:1px solid #747474;" class="formcontent">
+			<tr>
+				<td>
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr>
+							<td>ID</td>
+							<td><input type="text" name="edit_person_id" id="edit_person_id" size="20" readonly/></td>
+						</tr>
+						<tr>
+							<td>First Name</td>
+							<td><span style="color:red">*</span><input type="text" name="edit_first_name" id="edit_first_name" size="20" required /></td>
+						</tr>
+						<tr>
+							<td>Last Name</td>
+							<td><span style="color:red">*</span><input type="text" name="edit_last_name" id="edit_last_name" size="20" required /></td>
+						</tr>
+						<tr>
+							<td>Email</td>
+							<td><span style="color:red">*</span><input type="text" name="edit_email_address" id="edit_email_address" size="20" required /></td>
+						</tr>
+					</table>
+				</td>
+				<td>
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr>
+							<td>Hire Date</td>
+							<td><span style="color:red">*</span><input type="date" name="edit_hire_date" id="edit_hire_date" size="10" required ></td>
+						</tr>
+						<tr>
+							<td>Job Title</td>
+							<td><span style="color:red">*</span>
+								<select name="edit_job_title" id="edit_job_title" required >
+									<option></option>
+									<option value="TA Rep A">TA REP A</option>
+									<option value="TA REP B">TA REP B</option>
+									<option value="Direct Rep A">DIRECT REP A</option>
+									<option value="Direct Rep B">DIRECT REP B</option>
+								</select>
+							</td>
+						</tr>
+						<tr id="edit_agency_num_tr" style="display: none;">
+							<td>Agency Number</td>
+							<td><span style="color:red">*</span><input type="text" name="edit_agency_num" id="edit_agency_num" size="20" value="empty"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<button class="button-small" value="Edit Employee" id="edit_employee">Edit Employee</button>
+					<button type="button" name="clear" value="Clear Filter" class="button-small icon-cancel" onclick="window.location.reload();">Cancel</button>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div id="registration_pageheading" class="pageheading">Employee Registration Form</div>
+<div id="registration_div" class="formcontent">
+	<div class="msg_error formError" style="display: none;"></div>
+	<form id="employee_registration_form">
+		<table cellpadding="2" cellspacing="0" border="0" style="border:1px solid #747474;" class="formcontent">
+			<tr>
+				<td>
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr>
+							<td>ID</td>
+							<td><span style="color:red">*</span><input type="text" name="person_id" id="person_id" size="20" required /></td>
+						</tr>
+						<tr>
+							<td>First Name</td>
+							<td><span style="color:red">*</span><input type="text" name="first_name" id="first_name" size="20" required /></td>
+						</tr>
+						<tr>
+							<td>Last Name</td>
+							<td><span style="color:red">*</span><input type="text" name="last_name" id="last_name" size="20" required /></td>
+						</tr>
+						<tr>
+							<td>Email</td>
+							<td><span style="color:red">*</span><input type="text" name="email_address" id="email_address" size="20" required /></td>
+						</tr>
+					</table>
+				</td>
+				<td>
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr>
+							<td>Hire Date</td>
+							<td><span style="color:red">*</span><input type="date" name="hire_date" id="hire_date" size="10" required ></td>
+						</tr>
+						<tr>
+							<td>Job Title</td>
+							<td><span style="color:red">*</span>
+								<select name="job_title" id="job_title" required >
+									<option></option>
+									<option value="TA Rep A">TA REP A</option>
+									<option value="TA REP B">TA REP B</option>
+									<option value="Direct Rep A">DIRECT REP A</option>
+									<option value="Direct Rep B">DIRECT REP B</option>
+								</select>
+							</td>
+						</tr>
+						<tr id="agency_num_tr" style="display: none;">
+							<td>Agency Number</td>
+							<td><span style="color:red">*</span><input type="text" name="agency_num" id="agency_num" size="20" value="empty"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<button class="button-small" value="Register Employee" id="register_employee">Register Employee</button>
+					<button type="button" name="clear" value="Clear Filter" class="button-small icon-cancel" onclick="window.location.reload();">Cancel</button>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div style="margin:5px;">
+	<table cellpadding="2" cellspacing="0" border="0" id="employee_table" class="display">
+		<thead id="emplyee_table_head">
+			<th>ID</th>
+			<th>First Name</th>
+			<th>Last Name</th>
+			<th>Email</th>
+			<th>Hire Date</th>
+			<th>Job Title</th>
+			<th>Agency Number</th>
+			<th>Registration Date</th>
+			<th></th>
+			<th></th>
+		</thead>
+		<tbody></tbody>
+	</table>
+</div>
