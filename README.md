@@ -18,6 +18,6 @@ To run you must:
 `registration_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 PRIMARY KEY (`person_id`));
 ```
-3. Go into `/helpers/db_conn.php` and change the database name, user, and password to what your what you wish to use
+3. Go into `/helpers/db_conn.php` and change the database name, user, and password to what you wish to use
 4. Assuming you have php installed, go to project root and run `php -S 127.0.0.1:8080`.
 5. Finally open a browswer and visit `localhost:8080`. The app should be running and working
