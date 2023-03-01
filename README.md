@@ -1,6 +1,3 @@
-# rcg_assessment
-rcg_assessment
-
 To run you must:
  1. Clone this repo
  2. import the emp.sql file into your local MySQL or MariaDB server
