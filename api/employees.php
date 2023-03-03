@@ -84,9 +84,6 @@ if ($method == 'POST') {
 	$hire_date = trim($options['hire_date']);
 	$job_title = trim($options['job_title']);
 	$agency_num = trim($options['agency_num']);
-	if ($agency_num == 'empty') {
-		unset($agency_num);
-	}
 
 	$column_sql .= "`first_name` = ?, `last_name` = ?, `email_address` = ?, `hire_date` = ?, `job_title` = ?";
 	$column_val_types = 'sssss';
